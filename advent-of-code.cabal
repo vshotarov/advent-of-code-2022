@@ -148,3 +148,19 @@ executable day08
                       -Wredundant-constraints
                       -Wpartial-fields
                       -Wunused-packages
+
+executable day09
+    main-is:          Main.hs
+    build-depends:    base
+                     ,Common
+                     ,containers
+    hs-source-dirs:   day09
+    default-language: Haskell2010
+    ghc-options:      -Wall
+                      -Wcompat
+                      -Widentities
+                      -Wincomplete-uni-patterns
+                      -Wincomplete-record-updates
+                      -Wredundant-constraints
+                      -Wpartial-fields
+                      -Wunused-packages
