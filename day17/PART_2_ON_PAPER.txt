@@ -1,0 +1,41 @@
+First off, run the haskell solution which will print a ton of stuff of the form
+
+```
+visited ({SHAPE_TYPE_AS_INT},"{STRING_OF_AIR_JETS}",{HEIGHT},{NUM_OBSTACLES})
+```
+
+which you should give about 10s and then kill.
+
+Those lines get printed each time we are at a specific shape with the exact
+same string of air jets, which we treat as a point where the pattern repeats.
+
+So taking the 1st, 2nd and 3rd times we hit the same shape and air streams,
+we get the following.
+
+# NOTE: I did do this a couple of times to find a number of obstacles (3290)
+# which would make it so dividing the remainder of (100000.. - 3290) by the
+# height obstacle step (1705) between cycles will give us no remainder.
+
+1: 4999  3290
+2: 7581  4995
+3: 10163 6700
+
+Then we can start calculating that huge number.
+
+obstacleStep = 1705
+heightStep   = 2582
+
+obstacles up to 1 = 3290
+height up to 1 = 4999
+
+num obstacle step fits in remainder (1000000000000 - 3290) = 586510262
+remainder % obstacle step = 0
+
+answer = height up to 1
+       + num fits * height step
+
+ = 4999 + 586510262 * 2582 = 1514369501483
+
+And because i calculate height by taking the max Y
+value but the value at rest i take to be 0 rather than 1,
+so i have to add 1, hence add 1 to that
