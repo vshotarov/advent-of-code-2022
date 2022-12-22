@@ -1,0 +1,85 @@
+module Main where
+
+import qualified Common
+import qualified Data.Map as M
+import qualified Data.Set as S
+import Data.List.Split (splitOn)
+import Data.List (sortOn)
+
+import Debug.Trace
+
+main :: IO ()
+main = do
+    putStrLn $ "-- Solving day16 --"
+    input <- Common.readInput
+
+    -- Parse
+    let parsedInput = parse input
+    putStrLn $ "Parsed input: " ++ (Common.truncateString $ show parsedInput)
+
+    -- Solve
+    let answer1 = bfs2 parsedInput
+    let answer2 = "not solved yet"
+
+    -- Print answers
+    putStrLn $ "Part 1: " ++ show answer1
+    putStrLn $ "Part 2: " ++ show answer2
+
+type Pipe = (Int,[String])
+
+parse :: String -> M.Map String Pipe
+parse input = foldr lineToPipe M.empty $ lines input
+    where lineToPipe x acc =
+            let (_:name:_:_:rate:_:_:_:_:valves) = splitOn " " x
+                rate' = drop 5 $ init rate
+                valves' = (last valves):(map init $ init valves)
+             in M.insert name (read rate',valves') acc
+
+createDistanceMap :: M.Map String Pipe -> M.Map String Int
+createDistanceMap pipes = go [("AA",0)] [] M.empty
+    where go [] _ distances = distances
+          go ((v,s):toExplore) visited distances
+            | v `elem` visited = go toExplore visited distances
+            | otherwise = let neighbours = zip (snd $ pipes M.! v) $ repeat (s+1)
+                           in go (toExplore ++ neighbours) (v:visited) (M.insert v s distances)
+
+bfs :: M.Map String Pipe -> Int
+bfs pipes = go [("AA",30,0,0,S.empty)] S.empty 0
+    where totalRate = sum . map (fst . snd) $ M.toList pipes
+          go [] _ best = best
+          go ((v,t,s,r,vs):toExplore) visited best
+            | s + (t * totalRate) < best = go toExplore visited best
+            | (v,t,s,r,vs) `elem` visited = go toExplore visited best
+            | t < 0 = trace (show (max best (s-r))) $ go toExplore visited $ max best (s-r)
+            | t == 0 = trace (show (max best s)) $ go toExplore visited $ max best s
+            | otherwise = --trace (show (v,t,s,r)) $
+                          let neighbours = snd $ pipes M.! v
+                              nsWithThisValveEnabled = (map (\n -> (n,t-2,s+r*2+(fst $ pipes M.! v),r + (fst $ pipes M.! v),S.insert v vs)) neighbours)
+                           in go (sortOn (\(_,_,_,r,_) -> -r) (toExplore ++ (map (\n -> (n,t-1,s+r,r,vs)) neighbours)
+                               ++ (if v `S.member` vs then [] else nsWithThisValveEnabled)
+                               ++ []))
+                                 (S.insert (v,t,s,r,vs) visited)
+                                 best
+
+bfs2 :: M.Map String Pipe -> Int
+bfs2 pipes = go [("AA","AA",26,0,0,S.empty)] S.empty 0
+    where totalRate = sum . map (fst . snd) $ M.toList pipes
+          go [] _ best = best
+          go ((v1,v2,t,s,r,vs):toExplore) visited best
+            | s + (t * totalRate) < best = go toExplore visited best
+            | (v1,v2,t,s,r,vs) `elem` visited = go toExplore visited best
+            | t < 0 = trace (show (max best (s-r))) $ go toExplore visited $ max best (s-r)
+            | t == 0 = trace (show (max best s)) $ go toExplore visited $ max best s
+            | otherwise = --trace (show (v,t,s,r)) $
+                          let neighbours1 = snd $ pipes M.! v1
+                              neighbours2 = snd $ pipes M.! v2
+                              nsWithThisValveEnabled1 = (map (\(n1,n2) -> (n1,n2,t-2,s+r*2+(fst $ pipes M.! v1),r + (fst $ pipes M.! v1),S.insert v1 vs)) [(n1,n2) | n1 <- neighbours1, n2 <- neighbours2])
+                              nsWithThisValveEnabled2 = (map (\(n1,n2) -> (n1,n2,t-2,s+r*2+(fst $ pipes M.! v2),r + (fst $ pipes M.! v2),S.insert v2 vs)) [(n1,n2) | n1 <- neighbours1, n2 <- neighbours2])
+                           in go (sortOn (\(_,_,_,_,r,_) -> -r) (toExplore
+                                   ++ (map (\(n1,n2) -> (n1,n2,t-1,s+r,r,vs)) [(n1,n2) | n1 <- neighbours1, n2 <- neighbours2])
+                                   ++ (map (\(n1,n2) -> (n1,n2,t-1,s+r,r,vs)) [(n1,n2) | n1 <- neighbours1, n2 <- neighbours2])
+                                   ++ (if v1 `S.member` vs then [] else nsWithThisValveEnabled1)
+                                   ++ (if v2 `S.member` vs then [] else nsWithThisValveEnabled2)
+                                   ++ []))
+                                 (S.insert (v1,v2,t,s,r,vs) visited)
+                                 best
